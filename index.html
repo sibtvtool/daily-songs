@@ -64,15 +64,21 @@
 
   function pad(n) { return String(n).padStart(2, '0'); }
   function fileName(i) { return 'audios/song' + pad(i) + '.mp3'; }
+  function fileNameCap(i) { return 'audios/Song' + pad(i) + '.mp3'; }
+
+  // Try lowercase name first, then capital-S name (both work)
+  function tryFiles(i, candidates) {
+    if (!candidates.length) return Promise.resolve();
+    return fetch(candidates[0], { method: 'HEAD' }).then(function (r) {
+      if (r.ok) { available.push({ n: i, file: candidates[0] }); }
+      else { return tryFiles(i, candidates.slice(1)); }
+    }).catch(function () { return tryFiles(i, candidates.slice(1)); });
+  }
 
   // Check which songs exist, then build the cards
   var checks = [];
   for (var i = 1; i <= TOTAL; i++) {
-    (function (i) {
-      checks.push(fetch(fileName(i), { method: 'HEAD' }).then(function (r) {
-        if (r.ok) available.push({ n: i, file: fileName(i) });
-      }).catch(function () {}));
-    })(i);
+    checks.push(tryFiles(i, [fileName(i), fileNameCap(i)]));
   }
 
   Promise.all(checks).then(function () {
