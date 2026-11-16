@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Today Audios</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Zen+Dots&display=swap">
+<style>
+  :root{--line:#dddcd6;--t:#17181c;--m:#7a808c;--a:#e85d0c;--b:#ff9a2e}
+  *{box-sizing:border-box;margin:0}
+  body{background:#f4f4f1;color:var(--t);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+  header{position:sticky;top:0;z-index:5;padding:max(10px,env(safe-area-inset-top)) 14px 10px;background:#101014;border-bottom:1px solid #26272e}
+  .top{display:flex;justify-content:space-between;align-items:center;gap:10px;max-width:1200px;margin:auto}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand b{display:flex;gap:.1em;white-space:nowrap;font:400 clamp(13px,4vw,17px)/1.05 "Zen Dots","Orbitron","Arial Black",system-ui,sans-serif;letter-spacing:.06em;color:inherit;text-shadow:none}
+  .brand b i{font-style:normal;color:#57534a;animation:bulb 3.6s linear infinite;animation-delay:var(--d,0s)}
+  .brand b s{display:inline-block;width:.5em;text-decoration:none}
+  @keyframes bulb{0%,32%{color:#ffc46b;text-shadow:0 0 14px rgba(255,164,46,.95),0 0 44px rgba(255,130,20,.55),0 0 90px rgba(255,110,10,.3)}42%,100%{color:#57534a;text-shadow:none}}
+  @media(prefers-reduced-motion:reduce){.brand b i{animation:none;color:#ffc46b;text-shadow:0 0 14px rgba(255,164,46,.8),0 0 44px rgba(255,130,20,.45)}}
+  main{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;max-width:1200px;margin:14px auto 0;padding:0 14px 130px}
+  .card{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:20px;border:1.5px solid transparent;background:linear-gradient(#fffe,#fffe) padding-box,linear-gradient(135deg,#e85d0c,#ffc46b) border-box;box-shadow:0 12px 30px -14px rgba(76,58,180,.28)}
+  .card h2{font-size:15px;font-weight:650}
+  .card h2 em{font-style:normal;font-weight:800;color:var(--a)}
+  .card audio{width:100%;height:40px}
+  .btn,select{font:inherit;font-weight:600;color:var(--t);background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 1px 2px rgba(16,24,40,.05);text-decoration:none;min-height:44px}
+  .btn:focus-visible{outline:2px solid var(--a);outline-offset:2px}
+  .pri{border:0;color:#fff;background:linear-gradient(90deg,var(--a),#ff7a26 55%,var(--b));box-shadow:0 4px 14px #e85d0c44}
+  .bar{position:fixed;left:0;right:0;bottom:0;z-index:6;padding:10px 14px max(10px,env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid var(--line);box-shadow:0 -8px 24px rgba(16,24,40,.08)}
+  .bar>div{max-width:1200px;margin:auto}
+  .line{display:flex;justify-content:space-between;gap:10px;font-size:13px;color:var(--m);margin:6px 0 8px}
+  .act{display:grid;grid-template-columns:1fr;gap:8px}
+  .act .pri{min-height:50px;font-size:16px}
+  .empty{grid-column:1/-1;text-align:center;color:var(--m);padding:40px 10px;font-size:16px}
+  [hidden]{display:none!important}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <div class="brand"><svg width="38" height="38" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#e85d0c"/><stop offset="1" stop-color="#ff9a2e"/></linearGradient></defs><rect width="40" height="40" rx="11" fill="url(#lg)"/><path d="M15 11.5v14l13-7z" fill="#fff"/><path d="M12 30.5h16" stroke="#fff" stroke-opacity=".75" stroke-width="2.6" stroke-linecap="round"/></svg>
+    <b id="logo" aria-label="Today Audios"><i style="--d:0.0s">T</i><i style="--d:0.4s">o</i><i style="--d:0.8s">d</i><i style="--d:1.2s">a</i><i style="--d:1.6s">y</i><s></s><i style="--d:2.0s">A</i><i style="--d:2.4s">u</i><i style="--d:2.8s">d</i><i style="--d:3.2s">i</i><i style="--d:3.6s">o</i><i style="--d:4.0s">s</i></b></div>
+  </div>
+</header>
+
+<main id="grid"></main>
+
+<div class="bar">
+  <div>
+    <div class="line"><span id="status"></span><span id="count"></span></div>
+    <div class="act"><button class="btn pri" id="downloadAll">⬇ Download All</button></div>
+  </div>
+</div>
+
+<script>
+  var TOTAL = 20;
+  var grid = document.getElementById('grid');
+  var statusEl = document.getElementById('status');
+  var countEl = document.getElementById('count');
+  var btn = document.getElementById('downloadAll');
+  var available = [];
+  var downloading = false;
+
+  function pad(n) { return String(n).padStart(2, '0'); }
+  function fileName(i) { return 'audios/song' + pad(i) + '.mp3'; }
+  function fileNameCap(i) { return 'audios/Song' + pad(i) + '.mp3'; }
+
+  // Try lowercase name first, then capital-S name (both work)
+  function tryFiles(i, candidates) {
+    if (!candidates.length) return Promise.resolve();
+    return fetch(candidates[0], { method: 'HEAD' }).then(function (r) {
+      if (r.ok) { available.push({ n: i, file: candidates[0] }); }
+      else { return tryFiles(i, candidates.slice(1)); }
+    }).catch(function () { return tryFiles(i, candidates.slice(1)); });
+  }
+
+  // Check which songs exist, then build the cards
+  var checks = [];
+  for (var i = 1; i <= TOTAL; i++) {
+    checks.push(tryFiles(i, [fileName(i), fileNameCap(i)]));
+  }
+
+  Promise.all(checks).then(function () {
+    available.sort(function (a, b) { return a.n - b.n; });
+    if (available.length === 0) {
+      var e = document.createElement('div');
+      e.className = 'empty';
+      e.textContent = 'No songs yet — check back soon.';
+      grid.appendChild(e);
+      btn.style.display = 'none';
+      return;
+    }
+    countEl.textContent = available.length + ' songs';
+    available.forEach(function (s) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML =
+        '<h2>Song <em>' + pad(s.n) + '</em></h2>' +
+        '<audio controls preload="none" src="' + s.file + '"></audio>' +
+        '<a class="btn" href="' + s.file + '" download="Song ' + pad(s.n) + '.mp3">⬇ Download</a>';
+      grid.appendChild(card);
+    });
+  });
+
+  // Download All: direct downloads, one song after another (no ZIP — mobile friendly)
+  btn.addEventListener('click', function () {
+    if (available.length === 0 || downloading) return;
+    downloading = true;
+    btn.disabled = true;
+    var i = 0;
+    statusEl.textContent = 'Starting… tap Allow if asked.';
+    function next() {
+      if (i >= available.length) {
+        statusEl.textContent = 'Done — check your Downloads folder.';
+        countEl.textContent = available.length + ' songs';
+        btn.disabled = false;
+        btn.textContent = '⬇ Download All';
+        downloading = false;
+        return;
+      }
+      var s = available[i];
+      var a = document.createElement('a');
+      a.href = s.file;
+      a.download = 'Song ' + pad(s.n) + '.mp3';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      i++;
+      statusEl.textContent = 'Downloading ' + i + ' / ' + available.length + '…';
+      btn.textContent = 'Downloading ' + i + ' / ' + available.length + '…';
+      setTimeout(next, 900);
+    }
+    next();
+  });
+</script>
+</body>
+</html>
